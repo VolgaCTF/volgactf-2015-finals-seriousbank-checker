@@ -11,6 +11,12 @@ from random import randrange
 
 
 class SampleChecker(Server):
+
+	register_step_err = "Registration step err:  %s"
+	login_step_err = "Login step err: %s"
+	billing_step_err = "Billing (push) step err: %s"
+	validate_step_err = "Validate (pull) step err: %s"
+
 	def dumper(self, obj):
 		return json.dumps(obj).encode('base64').rstrip("\n")
 
@@ -76,8 +82,21 @@ class SampleChecker(Server):
 								data=acc_data, 
 								headers=self.get_post_form_headers(acc_data),
 								allow_redirects=False)
+
+			except requests.ConnectionError as ex:
+				self.logger.error(self.register_step_err % unicode(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)
+			except requests.HTTPError as ex:
+				self.logger.error(self.register_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.MUMBLE, flag_id)
+			except requests.Timeout as ex:
+				self.logger.error(self.register_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.MUMBLE, flag_id)						
 			except Exception as ex:
-				self.logger.error('Failed connect to the service')
+				self.logger.error(self.register_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
 				return (Result.DOWN, flag_id)
 
@@ -87,8 +106,21 @@ class SampleChecker(Server):
 									data=acc_data, 
 									headers=self.get_post_form_headers(acc_data), 
 									allow_redirects=False)
+
+				except requests.ConnectionError as ex:
+					self.logger.error(self.login_step_err % unicode(ex))
+					self.logger.debug(str(ex), exc_info=True)
+					return (Result.DOWN, flag_id)
+				except requests.HTTPError as ex:
+					self.logger.error(self.login_step_err % str(ex))
+					self.logger.debug(str(ex), exc_info=True)
+					return (Result.MUMBLE, flag_id)
+				except requests.Timeout as ex:
+					self.logger.error(self.login_step_err % str(ex))
+					self.logger.debug(str(ex), exc_info=True)
+					return (Result.MUMBLE, flag_id)						
 				except Exception as ex:
-					self.logger.error('Failed connect to the service')
+					self.logger.error(self.login_step_err % str(ex))
 					self.logger.debug(str(ex), exc_info=True)
 					return (Result.DOWN, flag_id)
 
@@ -100,15 +132,29 @@ class SampleChecker(Server):
 					try:
 						bill = s.post(team_host + "/billing/", 
 										data=bill_data, 
-										headers=self.get_post_form_headers(bill_data))
+										headers=self.get_post_form_headers(bill_data),
+										allow_redirects=False)
+
+					except requests.ConnectionError as ex:
+						self.logger.error(self.billing_step_err % unicode(ex))
+						self.logger.debug(str(ex), exc_info=True)
+						return (Result.DOWN, flag_id)
+					except requests.HTTPError as ex:
+						self.logger.error(self.billing_step_err % str(ex))
+						self.logger.debug(str(ex), exc_info=True)
+						return (Result.MUMBLE, flag_id)
+					except requests.Timeout as ex:
+						self.logger.error(self.billing_step_err % str(ex))
+						self.logger.debug(str(ex), exc_info=True)
+						return (Result.MUMBLE, flag_id)						
 					except Exception as ex:
-						self.logger.error('Failed connect to the service')
+						self.logger.error(self.billing_step_err % str(ex))
 						self.logger.debug(str(ex), exc_info=True)
 						return (Result.DOWN, flag_id)
 
 					tid = s.cookies.get("accepted_transaction")
 
-					if (bill.status_code == 200) and (tid is not None):	
+					if (bill.status_code == 302) and (tid is not None):	
 						#print "flag_id", tid
 						account["billing"] = billing
 						flag_id = {"account": account, "sid":sid, "tid":tid}
@@ -116,17 +162,17 @@ class SampleChecker(Server):
 						return (Result.UP, self.dumper(flag_id) )
 
 					else:
-						self.logger.error("billing failed")
+						self.logger.error(self.billing_step_err % "billing failed")
 						#print "billing failed"
 						#print bill.text.encode("utf-8")
 						return (Result.MUMBLE, flag_id)
 				else:
-					self.logger.error("login failed")
+					self.logger.error(self.login_step_err % "login failed")
 					#print "login failed"
 					#print login.text.encode("utf-8")
 					return (Result.MUMBLE, flag_id)
 			else:
-				self.logger.error("register failed")
+				self.logger.error(self.register_step_err % "register failed")
 				#print "register failed"
 				#print reg.text.encode("utf-8")
 				return (Result.MUMBLE, flag_id)
@@ -141,10 +187,29 @@ class SampleChecker(Server):
 		with requests.Session() as s:
 			s.cookies.set("sessionid", flag_id["sid"])
 			s.cookies.set("accepted_transaction", flag_id["tid"])
-			valid = s.get(team_host + cell, headers=headers)
+			try:
+
+				valid = s.get(team_host + cell, headers=headers)
+
+			except requests.ConnectionError as ex:
+				self.logger.error(self.validate_step_err % unicode(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)
+			except requests.HTTPError as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.MUMBLE, flag_id)
+			except requests.Timeout as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.MUMBLE, flag_id)						
+			except Exception as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)			
 
 			if valid.status_code == 200:
-				if flag_id["account"]["billing"]["sign"] == valid.text:
+				if flag_id["account"]["billing"]["sign"] == valid.text.replace('\n','').replace('\r',''):
 					return Result.UP
 				else:
 					return Result.CORRUPT
@@ -160,5 +225,6 @@ def testrun():
 			print "Pulling return is: ", checker.pull("localhost", flag_id, "")
 
 if __name__ == '__main__':
+#	testrun()
 	checker = SampleChecker()
 	checker.run()
