@@ -94,7 +94,7 @@ class SampleChecker(Server):
 			except requests.Timeout as ex:
 				self.logger.error(self.register_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
-				return (Result.MUMBLE, flag_id)						
+				return (Result.DOWN, flag_id)						
 			except Exception as ex:
 				self.logger.error(self.register_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
@@ -118,7 +118,7 @@ class SampleChecker(Server):
 				except requests.Timeout as ex:
 					self.logger.error(self.login_step_err % str(ex))
 					self.logger.debug(str(ex), exc_info=True)
-					return (Result.MUMBLE, flag_id)						
+					return (Result.DOWN, flag_id)						
 				except Exception as ex:
 					self.logger.error(self.login_step_err % str(ex))
 					self.logger.debug(str(ex), exc_info=True)
@@ -146,7 +146,7 @@ class SampleChecker(Server):
 					except requests.Timeout as ex:
 						self.logger.error(self.billing_step_err % str(ex))
 						self.logger.debug(str(ex), exc_info=True)
-						return (Result.MUMBLE, flag_id)						
+						return (Result.DOWN, flag_id)						
 					except Exception as ex:
 						self.logger.error(self.billing_step_err % str(ex))
 						self.logger.debug(str(ex), exc_info=True)
@@ -202,7 +202,7 @@ class SampleChecker(Server):
 			except requests.Timeout as ex:
 				self.logger.error(self.validate_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
-				return (Result.MUMBLE, flag_id)						
+				return (Result.DOWN, flag_id)						
 			except Exception as ex:
 				self.logger.error(self.validate_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
