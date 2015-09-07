@@ -258,6 +258,6 @@ def testrun():
 			print "Pulling return is: ", checker.pull("localhost", flag_id, "")
 
 if __name__ == '__main__':
-	testrun()
-	# checker = SampleChecker()
-	# checker.run()
+	# testrun()
+	checker = SampleChecker()
+	checker.run()
