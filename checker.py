@@ -152,12 +152,12 @@ class SampleChecker(Server):
 						self.logger.debug(str(ex), exc_info=True)
 						return (Result.DOWN, flag_id)
 
-					tid = s.cookies.get("accepted_transaction")
+					tid = s.cookies.get("transaction_id")
+					tsign = s.cookies.get("transaction_sign")
 
 					if (bill.status_code == 302) and (tid is not None):	
-						#print "flag_id", tid
 						account["billing"] = billing
-						flag_id = {"account": account, "sid":sid, "tid":tid}
+						flag_id = {"account": account, "sid":sid, "tid":tid, "tsign": tsign}
 
 						return (Result.UP, self.dumper(flag_id) )
 
@@ -182,14 +182,16 @@ class SampleChecker(Server):
 		flag_id = self.loader(flag_id)
 
 		team_host = "http://%s:8000" % endpoint
-		cell = "/billing/%s/" % flag_id["account"]["username"]
+		billing_cell = "/billing/%s/" % flag_id["account"]["username"]
+		validate_cell = "/validate/%s/" % flag_id["tid"]
 
 		with requests.Session() as s:
 			s.cookies.set("sessionid", flag_id["sid"])
-			s.cookies.set("accepted_transaction", flag_id["tid"])
+			s.cookies.set("transaction_id", flag_id["tid"])
+			
 			try:
 
-				valid = s.get(team_host + cell, headers=headers)
+				check = s.get(team_host + billing_cell, headers=headers)
 
 			except requests.ConnectionError as ex:
 				self.logger.error(self.validate_step_err % unicode(ex))
@@ -206,25 +208,56 @@ class SampleChecker(Server):
 			except Exception as ex:
 				self.logger.error(self.validate_step_err % str(ex))
 				self.logger.debug(str(ex), exc_info=True)
-				return (Result.DOWN, flag_id)			
+				return (Result.DOWN, flag_id)
 
-			if valid.status_code == 200:
-				if flag_id["account"]["billing"]["sign"] == valid.text.replace('\n','').replace('\r',''):
-					return Result.UP
+			s.cookies.set("transaction_sign", flag_id["tsign"])
+
+			try:
+
+				validate = s.get(team_host + validate_cell, headers=headers)
+
+			except requests.ConnectionError as ex:
+				self.logger.error(self.validate_step_err % unicode(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)
+			except requests.HTTPError as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.MUMBLE, flag_id)
+			except requests.Timeout as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)						
+			except Exception as ex:
+				self.logger.error(self.validate_step_err % str(ex))
+				self.logger.debug(str(ex), exc_info=True)
+				return (Result.DOWN, flag_id)
+
+			if (check.status_code == 200) and (validate.status_code == 200):
+				flag_stat = s.cookies.get("valid")
+				if flag_stat is None:
+					return Result.MUMBLE
+
+				elif flag_stat == "True":
+
+					if flag_id["account"]["billing"]["sign"] == check.text.replace('\n','').replace('\r',''):
+						return Result.UP
+					else:
+						return Result.CORRUPT
 				else:
-					return Result.CORRUPT
+					Result.MUMBLE
 			else:
 				return Result.MUMBLE
 
 def testrun():
 	checker = SampleChecker()
-	for x in xrange(10):
+	for x in xrange(30):
 		result, flag_id = checker.push("localhost", "", "")
 		if (result == Result.UP) and (flag_id is not None):
-			print "Push return is", result, " data: ", flag_id.decode('base64')
+			print "Push return is", result, " data: ", flag_id.decode('base64'), "\nData len: ", len(flag_id)
 			print "Pulling return is: ", checker.pull("localhost", flag_id, "")
 
 if __name__ == '__main__':
-#	testrun()
+	# testrun()
 	checker = SampleChecker()
 	checker.run()
