@@ -42,7 +42,7 @@ class SampleChecker(Server):
 		m = md5()
 		m.update(str(random.randint(0, 10000000)))
 		flag = m.hexdigest() + '='
-		return flag
+		return "seriousbank___" + flag
 
 	def new_billing(self):
 		bid = self.generate_bid()
@@ -258,6 +258,6 @@ def testrun():
 			print "Pulling return is: ", checker.pull("localhost", flag_id, "")
 
 if __name__ == '__main__':
-	# testrun()
-	checker = SampleChecker()
-	checker.run()
+	testrun()
+	# checker = SampleChecker()
+	# checker.run()
