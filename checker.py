@@ -8,7 +8,7 @@ from hashlib import md5
 from themis.checker import Server, Result
 from time import sleep
 from random import randrange
-
+from multiprocessing import Pool
 
 class SampleChecker(Server):
 
@@ -249,15 +249,30 @@ class SampleChecker(Server):
 			else:
 				return Result.MUMBLE
 
+def check_flag(checker, flag_id):
+	print "Pull data: ", flag_id.decode('base64')
+	print "Pulling return is: ", checker.pull("localhost", flag_id, "")
+
 def testrun():
 	checker = SampleChecker()
-	for x in xrange(30):
+	ids = []
+	for x in xrange(50):
 		result, flag_id = checker.push("localhost", "", "")
 		if (result == Result.UP) and (flag_id is not None):
+			ids.append(flag_id)
 			print "Push return is", result, " data: ", flag_id.decode('base64'), "\nData len: ", len(flag_id)
-			print "Pulling return is: ", checker.pull("localhost", flag_id, "")
+			#print "Pulling return is: ", checker.pull("localhost", flag_id, "")
+			check_flag(checker, flag_id)
+			check_flag(checker, random.choice(ids))
+
+def runmultiple():
+	pool = Pool(8)
+	for x in xrange(8):
+		pool.apply_async(testrun)
+	while True:
+		pass
 
 if __name__ == '__main__':
-	# testrun()
+	#runmultiple()
 	checker = SampleChecker()
 	checker.run()
