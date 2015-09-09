@@ -19,7 +19,7 @@ class SampleChecker(Server):
 	login_step_err = "Login step err: %s"
 	billing_step_err = "Billing (push) step err: %s"
 	validate_step_err = "Validate (pull) step err: %s"
-	conn_timeout = os.getenv("SOCKET_TIMEOUT", 10)
+	conn_timeout = int(os.getenv("SOCKET_TIMEOUT", 10))
 
 	def dumper(self, obj):
 		return json.dumps(obj).encode('base64').rstrip("\n")
