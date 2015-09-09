@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import string
 import urllib
 import requests
@@ -18,7 +19,7 @@ class SampleChecker(Server):
 	login_step_err = "Login step err: %s"
 	billing_step_err = "Billing (push) step err: %s"
 	validate_step_err = "Validate (pull) step err: %s"
-	conn_timeout = 10
+	conn_timeout = os.getenv("SOCKET_TIMEOUT", 10)
 
 	def dumper(self, obj):
 		return json.dumps(obj).encode('base64').rstrip("\n")
@@ -283,6 +284,6 @@ def runmultiple(function, instances):
 		pass
 
 if __name__ == '__main__':
-	runmultiple(testrun, 8)
-	# checker = SampleChecker()
-	# checker.run()
+	#runmultiple(testrun, 8)
+	checker = SampleChecker()
+	checker.run()
