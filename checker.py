@@ -10,6 +10,8 @@ from time import sleep
 from random import randrange
 from multiprocessing import Pool
 
+from agents import get_agent
+
 class SampleChecker(Server):
 
 	register_step_err = "Registration step err:  %s"
@@ -52,7 +54,7 @@ class SampleChecker(Server):
 
 
 	def get_post_form_headers(self, data=""):
-		headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
+		headers={"User-Agent":get_agent(), #"Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"
 				"Content-Type":"application/x-www-form-urlencoded",
 				"Content-Length": str(len(data))}
 		return headers
@@ -178,7 +180,7 @@ class SampleChecker(Server):
 				return (Result.MUMBLE, flag_id)
 
 	def pull(self, endpoint, flag_id, flag):
-		headers={"User-Agent":"Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",}
+		headers={"User-Agent":get_agent(),}#"Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"
 		flag_id = self.loader(flag_id)
 
 		team_host = "http://%s:8000" % endpoint
@@ -265,14 +267,14 @@ def testrun():
 			check_flag(checker, flag_id)
 			check_flag(checker, random.choice(ids))
 
-def runmultiple():
+def runmultiple(function, instances):
 	pool = Pool(8)
-	for x in xrange(8):
-		pool.apply_async(testrun)
+	for x in xrange(instances):
+		pool.apply_async(function)
 	while True:
 		pass
 
 if __name__ == '__main__':
-	#runmultiple()
+	#runmultiple(testrun, 8)
 	checker = SampleChecker()
 	checker.run()
