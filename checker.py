@@ -18,6 +18,7 @@ class SampleChecker(Server):
 	login_step_err = "Login step err: %s"
 	billing_step_err = "Billing (push) step err: %s"
 	validate_step_err = "Validate (pull) step err: %s"
+	conn_timeout = 10
 
 	def dumper(self, obj):
 		return json.dumps(obj).encode('base64').rstrip("\n")
@@ -83,6 +84,7 @@ class SampleChecker(Server):
 				reg = s.post(team_host + "/register/", 
 								data=acc_data, 
 								headers=self.get_post_form_headers(acc_data),
+								timeout=self.conn_timeout,
 								allow_redirects=False)
 
 			except requests.ConnectionError as ex:
@@ -106,7 +108,8 @@ class SampleChecker(Server):
 				try:
 					login = s.post(team_host + "/login/", 
 									data=acc_data, 
-									headers=self.get_post_form_headers(acc_data), 
+									headers=self.get_post_form_headers(acc_data),
+									timeout=self.conn_timeout,
 									allow_redirects=False)
 
 				except requests.ConnectionError as ex:
@@ -135,6 +138,7 @@ class SampleChecker(Server):
 						bill = s.post(team_host + "/billing/", 
 										data=bill_data, 
 										headers=self.get_post_form_headers(bill_data),
+										timeout=self.conn_timeout,
 										allow_redirects=False)
 
 					except requests.ConnectionError as ex:
@@ -193,7 +197,9 @@ class SampleChecker(Server):
 			
 			try:
 
-				check = s.get(team_host + billing_cell, headers=headers)
+				check = s.get(team_host + billing_cell,
+								timeout=self.conn_timeout,
+								headers=headers)
 
 			except requests.ConnectionError as ex:
 				self.logger.error(self.validate_step_err % unicode(ex))
@@ -216,7 +222,9 @@ class SampleChecker(Server):
 
 			try:
 
-				validate = s.get(team_host + validate_cell, headers=headers)
+				validate = s.get(team_host + validate_cell,
+									timeout=self.conn_timeout,
+									headers=headers)
 
 			except requests.ConnectionError as ex:
 				self.logger.error(self.validate_step_err % unicode(ex))
@@ -258,7 +266,7 @@ def check_flag(checker, flag_id):
 def testrun():
 	checker = SampleChecker()
 	ids = []
-	for x in xrange(50):
+	for x in xrange(10):
 		result, flag_id = checker.push("localhost", "", "")
 		if (result == Result.UP) and (flag_id is not None):
 			ids.append(flag_id)
@@ -275,6 +283,6 @@ def runmultiple(function, instances):
 		pass
 
 if __name__ == '__main__':
-	#runmultiple(testrun, 8)
-	checker = SampleChecker()
-	checker.run()
+	runmultiple(testrun, 8)
+	# checker = SampleChecker()
+	# checker.run()
