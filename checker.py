@@ -74,7 +74,7 @@ class SampleChecker(Server):
 		acc_data = urllib.urlencode(account)#{"username":account["username"] , "password":account["password"]})
 		#print acc_data
 
-		billing = self.new_billing()
+		billing = {"bid":self.generate_bid(), "sign":"seriousbank___"+flag}
 		bill_data = urllib.urlencode(billing)#{"bid":billing["bid"],"sign":billing["sign"]})
 		#print bill_data
 
